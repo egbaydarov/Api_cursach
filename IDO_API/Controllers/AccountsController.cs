@@ -27,7 +27,7 @@ namespace IDO_API.Controllers
                 User user = new User(requestData[0].Value, requestData[1].Value);
                 await accountManager.CreateAccountAsync(user);
                 string id = accountManager.GetAccountId(requestData[0].Value);
-                await contentManager.CreateContentDocumentAsync(id.RemoveGuidDelimiters());
+                await contentManager.CreateContentDocumentAsync(id);
                 await imageContentManager.CreateContainerAsync(id);
                 return new SimpleResponse(); // OK
             }

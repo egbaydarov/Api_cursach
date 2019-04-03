@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 using IDO_API.DataBase.CosmosDB;
 using IDO_API.Extensions;
 using IDO_API.Models;
+using System.Web;
+using System.Web.Http;  
+using System.Net.Http;  
+using System.Net;
+using System.Diagnostics;
 using IDO_API.Models.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +19,7 @@ namespace IDO_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ContentsController : ControllerBase
+    public class ContentsController : Controller
     {
         AccountManager accountManager = AccountManager.DefaultManager;
         DataBase.AzureStorage.ContentManager imageContentManager = DataBase.AzureStorage.ContentManager.DefaultManager;
@@ -33,22 +38,23 @@ namespace IDO_API.Controllers
             }
         }
         [HttpPut]
-        public async Task<ActionResult<Response>> ApiPutNote()
+        public async Task<ActionResult<Response>> ApiPutNote([FromHeader]IFormFile file)
         {
             try
             {
-                var requestData = HttpContext.Items.ToArray();
-                string l = (string)requestData[0].Value;
-                string p = (string)requestData[1].Value;
+                var requestData = Request.Form.ToArray();
+                
+                string l = requestData[0].Value;
+                string p = requestData[1].Value;
                 string imagename = MethodsEx.GetCurrentTimeString();
-                string descr = (string)requestData[3].Value;
-                using (MemoryStream image = (MemoryStream)requestData[2].Value)
+                string descr = requestData[2].Value;
+                using (Stream image = file.OpenReadStream())
                 {
                     if (accountManager.IsValidAcccount(l, p))
                     {
                         var user = accountManager.GetAccountData(l, p);
                         await imageContentManager.UploadAchievementImageAsync(user.Id, imagename, image);
-                        await contentManager.AddNoteAsync(user.Id, new Models.Note(descr, imagename));
+                        await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename));
                         return new SimpleResponse(); // OK
                     }
                     else
@@ -137,3 +143,4 @@ namespace IDO_API.Controllers
             }
         }
     }
+}

@@ -11,7 +11,7 @@ namespace IDO_API.DataBase.AzureStorage
 {
     public class ContentManager
     {
-        static string storageConnectionString = "";
+        static string storageConnectionString = "UseDevelopmentStorage=true";
         static  CloudBlobClient cloudBlobClient;
 
 
@@ -43,7 +43,9 @@ namespace IDO_API.DataBase.AzureStorage
 
         public async Task UploadAchievementImageAsync(string containerReference, string blobReference, Stream image)
         {
-            var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
+            var container = cloudBlobClient.GetContainerReference(containerReference);
+            var blob = container.GetBlockBlobReference(blobReference);
+
             await blob.UploadFromStreamAsync(image);
         }
         public async Task CreateContainerAsync(string containerReference)

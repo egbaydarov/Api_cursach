@@ -49,12 +49,16 @@ namespace IDO_API.DataBase.CosmosDB
         public async Task AddNoteAsync(string userId, Note note)
         {
             string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId,collectionId))
+            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId,collectionId),new FeedOptions {EnableCrossPartitionQuery = true,MaxItemCount = 1})
                 .Where(content => content.Id.Equals(documentId))
                           .AsEnumerable()
                           .FirstOrDefault();
-            query.notes.Add(note);
-            await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId,collectionId,query.Id), query);
+            if (query != null)
+            {
+                query.notes.Add(note);
+                await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+            }
+            else throw new ApplicationException("Incorrect User Data");
         }
 
         public async Task DeleteNoteAsync(string userId, Note note)

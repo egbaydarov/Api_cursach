@@ -54,6 +54,10 @@ namespace IDO_API.DataBase.CosmosDB
                     UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
                     user);
             }
+            else
+            {
+                throw new ApplicationException("Incorrect ID or Password.");
+            }
         }
         public async Task CreateAccountAsync(User newAccount)
         {
