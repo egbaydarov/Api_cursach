@@ -12,6 +12,9 @@ namespace IDO_API.Models
         {
             Nickname = nickname;
             Password = password;
+            Follows = new List<string>();
+            Followers = new List<string>();
+
         }
 
         [JsonProperty(PropertyName = "id")]
@@ -23,5 +26,10 @@ namespace IDO_API.Models
         [JsonProperty(PropertyName = "password")]
         public string Password { get; set; }
 
+        [JsonProperty(PropertyName = "follows")]
+        public List<string> Follows { get; set; }
+
+        [JsonProperty(PropertyName = "followers")]
+        public List<string> Followers { get; set; }
     }
 }

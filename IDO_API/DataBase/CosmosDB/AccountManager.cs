@@ -10,9 +10,9 @@ namespace IDO_API.DataBase.CosmosDB
     {
         static AccountManager defaultInstance = new AccountManager();
 
-        const string accountURL = @"https://apponedb.documents.azure.com:443/";
-        const string accountKey = @"vgmfdRZISOYPuyhVE1gf7DiM6Ky0ImzF6Mm3ftLf2Fqnfb5RqgTDOzRqKTGdSMkwp7lSf4sXKxOLw2jPlUNZNw==";
-        const string databaseId = @"appOne";
+        const string accountURL = @"https://localhost:8081";
+        const string accountKey = @"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+        const string databaseId = @"IDO";
         const string collectionId = @"accounts";
 
         private Uri collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collectionId);
@@ -21,7 +21,14 @@ namespace IDO_API.DataBase.CosmosDB
 
         public AccountManager()
         {
-            client = new DocumentClient(new System.Uri(accountURL), accountKey);
+            try
+            {
+                client = new DocumentClient(new System.Uri(accountURL), accountKey);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"{e.Message}");
+            }
         }
 
         public static AccountManager DefaultManager
@@ -35,17 +42,17 @@ namespace IDO_API.DataBase.CosmosDB
                 defaultInstance = value;
             }
         }
-        public async Task UpadateAccountInfoAsync(User oldAccount, User newAccount)
+        public async Task UpadateAccountInfoAsync(string oldPass, User user)
         {
             var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                              .Where(user => user.Nickname.Equals(oldAccount.Nickname))
+                              .Where(acc => acc.Id.Equals(user.Id))
                               .AsEnumerable()
                               .FirstOrDefault();
-            if (query != null && query.Password.Equals(oldAccount.Password))
+            if (query != null && query.Password.Equals(oldPass))
             {
                 await client.ReplaceDocumentAsync(
                     UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
-                    newAccount);
+                    user);
             }
         }
         public async Task CreateAccountAsync(User newAccount)
@@ -64,18 +71,39 @@ namespace IDO_API.DataBase.CosmosDB
             }
 
         }
-        public User TryGetAccountData(User account)
+        public User GetAccountData(string l, string p)
         {
             var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(account.Nickname))
+                          .Where(user => user.Nickname.Equals(l))
                           .AsEnumerable()
                           .FirstOrDefault();
-            if (query != null && query.Password.Equals(account.Password))
+            if (query != null && query.Password.Equals(p))
             {
                 return query;
             }
             else
                 throw new ApplicationException("Incorrect Login/Password.");
+        }
+        public string GetAccountId(string username)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(username))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            if (query != null)
+            {
+                return query.Id;
+            }
+            else
+                throw new ApplicationException("Incorrect Nickname.");
+        }
+        public bool IsValidAcccount(string nicname, string password)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(nicname))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            return query != null && query.Password.Equals(password);
         }
     }
 }

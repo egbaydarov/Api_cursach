@@ -12,3 +12,4 @@ C:\Users\maste\Documents\ШАРАГА\Solutions\IDO_API\IDO_API\obj\Debug\netcor
 C:\Users\maste\Documents\ШАРАГА\Solutions\IDO_API\IDO_API\bin\Debug\netcoreapp2.1\IDO_API.pdb
 C:\Users\maste\Documents\ШАРАГА\Solutions\IDO_API\IDO_API\obj\Debug\netcoreapp2.1\IDO_API.dll
 C:\Users\maste\Documents\ШАРАГА\Solutions\IDO_API\IDO_API\obj\Debug\netcoreapp2.1\IDO_API.pdb
+C:\Users\maste\Documents\ШАРАГА\Solutions\IDO_API\IDO_API\bin\Debug\netcoreapp2.1\Microsoft.Azure.Documents.ServiceInterop.dll
