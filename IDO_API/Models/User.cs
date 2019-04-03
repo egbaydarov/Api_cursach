@@ -1,0 +1,27 @@
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace IDO_API.Models
+{
+    public class User
+    {
+        public User(string nickname, string password)
+        {
+            Nickname = nickname;
+            Password = password;
+        }
+
+        [JsonProperty(PropertyName = "id")]
+        public string Id { get; set; }
+
+        [JsonProperty(PropertyName = "nickname")]
+        public string Nickname { get; set; }
+
+        [JsonProperty(PropertyName = "password")]
+        public string Password { get; set; }
+
+    }
+}

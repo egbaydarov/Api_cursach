@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IDO_API", "IDO_API\IDO_API.csproj", "{0D7E8DDB-08D3-4EA8-A62F-63F77A43A870}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D7E8DDB-08D3-4EA8-A62F-63F77A43A870}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D7E8DDB-08D3-4EA8-A62F-63F77A43A870}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D7E8DDB-08D3-4EA8-A62F-63F77A43A870}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D7E8DDB-08D3-4EA8-A62F-63F77A43A870}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {72A3EFFE-5CE2-4A31-A97C-1E245C836111}
+	EndGlobalSection
+EndGlobal
