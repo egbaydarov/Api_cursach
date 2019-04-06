@@ -50,9 +50,18 @@ namespace IDO_API.DataBase.CosmosDB
                               .FirstOrDefault();
             if (query != null && query.Password.Equals(oldPass))
             {
+                var query2 = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                              .Where(acc => acc.Nickname.Equals(user.Nickname))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+                if(query == null)
                 await client.ReplaceDocumentAsync(
                     UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
                     user);
+                else
+                {
+                    throw new ApplicationException("Nickname already taken.");
+                }
             }
             else
             {

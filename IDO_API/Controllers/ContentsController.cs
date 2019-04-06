@@ -42,12 +42,15 @@ namespace IDO_API.Controllers
         {
             try
             {
-                var requestData = Request.Form.ToArray();
-                
-                string l = requestData[0].Value;
-                string p = requestData[1].Value;
-                string imagename = MethodsEx.GetCurrentTimeString();
-                string descr = requestData[2].Value;
+                string ext = file.FileName.Split('.')[1].ToLower();
+                if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                    throw new ApplicationException("Wrong image extension.");
+                var requestData = Request.Form;
+
+                string l = requestData["nickname"];
+                string p = requestData["password"];
+                string descr = requestData["description"];
+                string imagename = MethodsEx.GetCurrentTimeString()+ "." + ext;
                 using (Stream image = file.OpenReadStream())
                 {
                     if (accountManager.IsValidAcccount(l, p))
@@ -63,6 +66,10 @@ namespace IDO_API.Controllers
                     }
                 }
             }
+            catch (IndexOutOfRangeException)
+            {
+                return new SimpleResponse(5, "Incorrect image file name.");
+            }
             catch (Exception e)
             {
                 return new SimpleResponse(5, e.Message);
@@ -73,12 +80,12 @@ namespace IDO_API.Controllers
         {
             try
             {
-                var requestData = HttpContext.Items.ToArray();
-                string l = (string)requestData[0].Value;
-                string p = (string)requestData[1].Value;
+                var requestData = Request.Form;
+                string l = requestData["nickname"];
+                string p = requestData["password"];
+                string notereference = requestData["note"];
+                string newdescr = requestData["description"];
                 string imagename = MethodsEx.GetCurrentTimeString();
-                string notereference = (string)requestData[2].Value;
-                string newdescr = (string)requestData[3].Value;
                 var newNote = new Note(newdescr, imagename);
                 if (accountManager.IsValidAcccount(l, p))
                 {
@@ -101,9 +108,9 @@ namespace IDO_API.Controllers
         {
             try
             {
-                string l = Request.Form.ToArray()[0].Value;
-                string p = Request.Form.ToArray()[1].Value;
-                string blobref = Request.Form.ToArray()[3].Value;
+                string l = Request.Form["nickname"];
+                string p = Request.Form["password"];
+                string blobref = Request.Form["note"];
                 await imageContentManager.DeleteAchievementImageAsync(accountManager.GetAccountId(l), blobref);
                 return new SimpleResponse();
             }
@@ -112,7 +119,7 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(6, e.Message);
             }
         }
-        [HttpGet("/{nickname}/{blobreference}")]
+        [HttpGet("/image/{nickname}/{blobreference}")]
         public ActionResult<Response> ApiGetSingleNote(string nickname, string blobreference)
         {
             try
@@ -124,7 +131,7 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(0, e.Message);
             }
         }
-        [HttpGet("/image/{nickname}/{blobreference}")]
+        [HttpGet("/{nickname}/{blobreference}/download")]
         public async Task<ActionResult<Response>> ApiDownloadSingleImage(string nickname, string blobreference)
         {
             try

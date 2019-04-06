@@ -23,10 +23,10 @@ namespace IDO_API.Controllers
         {
             try
             {
-                var requestData = Request.Form.ToArray();
-                User user = new User(requestData[0].Value, requestData[1].Value);
+                var requestData = Request.Form;
+                User user = new User(requestData["nickname"], requestData["password"]);
                 await accountManager.CreateAccountAsync(user);
-                string id = accountManager.GetAccountId(requestData[0].Value);
+                string id = accountManager.GetAccountId(requestData["nickname"]);
                 await contentManager.CreateContentDocumentAsync(id);
                 await imageContentManager.CreateContainerAsync(id);
                 return new SimpleResponse(); // OK
@@ -41,10 +41,10 @@ namespace IDO_API.Controllers
         {
             try
             {
-                var requestData = Request.Form.ToArray();
-                User user = new User(requestData[2].Value, requestData[3].Value);
-                user.Id = requestData[0].Value;
-                await accountManager.UpadateAccountInfoAsync(requestData[1].Value,user);
+                var requestData = Request.Form;
+                User user = new User(requestData["newnickname"], requestData["newpassword"]);
+                user.Id = requestData["nickname"];
+                await accountManager.UpadateAccountInfoAsync(requestData["password"], user);
                 return new SimpleResponse(); // OK
             }
             catch (Exception e)
@@ -52,17 +52,12 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(2, e.Message);
             }
         }
-        [HttpGet]
-        public ActionResult<Response> ApiGetAccountData()
+        [HttpGet("/account/{l}/{p}")]
+        public ActionResult<Response> ApiGetAccountData(string l, string p)
         {
             try
             {
-                var requestData = Request.Form.ToArray();
-                string l = requestData[0].Value;
-                string p = requestData[1].Value;
-                
                 return new AccountDataResponse(0, accountManager.GetAccountData(l,p));
-
             }
             catch(Exception e)
             {
