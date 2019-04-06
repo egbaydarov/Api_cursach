@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\maste\\Documents\\ШАРАГА\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj": {}
+    "C:\\Users\\maste\\Documents\\SHARAGA\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\maste\\Documents\\ШАРАГА\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj": {
+    "C:\\Users\\maste\\Documents\\SHARAGA\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\maste\\Documents\\ШАРАГА\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj",
+        "projectUniqueName": "C:\\Users\\maste\\Documents\\SHARAGA\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj",
         "projectName": "IDO_API",
-        "projectPath": "C:\\Users\\maste\\Documents\\ШАРАГА\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj",
+        "projectPath": "C:\\Users\\maste\\Documents\\SHARAGA\\Solutions\\IDO_API\\IDO_API\\IDO_API.csproj",
         "packagesPath": "C:\\Users\\maste\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\maste\\Documents\\ШАРАГА\\Solutions\\IDO_API\\IDO_API\\obj\\",
+        "outputPath": "C:\\Users\\maste\\Documents\\SHARAGA\\Solutions\\IDO_API\\IDO_API\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\ProgramData\\Xamarin\\NuGet\\",
