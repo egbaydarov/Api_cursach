@@ -39,7 +39,7 @@ namespace IDO_API.DataBase.CosmosDB
         public async Task CreateContentDocumentAsync(string userId)
         {
             List<Note> notes = new List<Note>();
-            
+
             await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
                 new Content(
                     userId.RemoveGuidDelimiters(),
@@ -49,7 +49,7 @@ namespace IDO_API.DataBase.CosmosDB
         public async Task AddNoteAsync(string userId, Note note)
         {
             string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId,collectionId),new FeedOptions {EnableCrossPartitionQuery = true,MaxItemCount = 1})
+            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                 .Where(content => content.Id.Equals(documentId))
                           .AsEnumerable()
                           .FirstOrDefault();
@@ -85,14 +85,14 @@ namespace IDO_API.DataBase.CosmosDB
         }
         public List<Note> GetNotes(string userId)
         {
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                 .Where(content => content.Id.Equals(userId.RemoveGuidDelimiters()))
                 .AsEnumerable()
                 .FirstOrDefault();
             if (query == null)
                 throw new ApplicationException("Incorrect user ID");
-            else
-                return query.notes;
+
+            return query.notes;
         }
         public Note GetSingleNote(string userId, string notename)
         {
@@ -105,11 +105,46 @@ namespace IDO_API.DataBase.CosmosDB
                           .Where(x => x.ImageReference.Equals(notename))
                           .AsEnumerable()
                           .FirstOrDefault();
-            if (query != null)
-                return query;
-            else
+            if (query == null)
                 throw new ApplicationException("Incorrect Note Data.");
+            return query;
 
+
+        }
+        public async Task<bool> Lukas(string userId, string notename, string lukasername)
+        {
+            bool key;
+            string documentId = userId.RemoveGuidDelimiters();
+            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                          .Where(content => content.Id.Equals(documentId))
+                          .AsEnumerable()
+                          .FirstOrDefault()
+                          .notes
+                          .Where(x => x.ImageReference.Equals(notename))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            var query2 = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                          .Where(content => content.Id.Equals(documentId))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            int index = query2.notes.IndexOf(query);
+            if (query == null || query2 == null)
+                throw new ApplicationException("Incorrect Note Name");
+            if (query.Lukasers.IndexOf(lukasername) == -1)
+            {
+                query.LukasCount++;
+                query.Lukasers.Add(userId);
+                key = true;
+            }
+            else
+            {
+                query.LukasCount--;
+                query.Lukasers.Remove(userId);
+                key = false;
+            }
+            query2.notes[index] = query;
+            await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query2.Id), query2);
+            return key;
         }
     }
 }

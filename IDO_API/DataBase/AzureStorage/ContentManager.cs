@@ -58,10 +58,12 @@ namespace IDO_API.DataBase.AzureStorage
             var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
             await blob.DeleteAsync();
         }
-        public async Task DownloadAchievementImageAsync(string containerReference, string blobReference, Stream outputstream)
+        public async Task<Stream> DownloadAchievementImageAsync(string containerReference, string blobReference)
         {
+            var stream = new MemoryStream();
             var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
-            blob.DownloadToStream(outputstream);
+            blob.DownloadToStream(stream);
+            return stream;
         }
     }
 }

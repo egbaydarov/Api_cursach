@@ -110,13 +110,65 @@ namespace IDO_API.DataBase.CosmosDB
             else
                 throw new ApplicationException("Incorrect Nickname.");
         }
-        public bool IsValidAcccount(string nicname, string password)
+        public bool IsValidAcccount(string nickname, string password)
         {
             var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(nicname))
+                          .Where(user => user.Nickname.Equals(nickname))
                           .AsEnumerable()
                           .FirstOrDefault();
             return query != null && query.Password.Equals(password);
         }
+
+        public async void Follow(string nickname, string password, string follownick)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(nickname))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(follownick))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            if (query == null || !query.Password.Equals(password) || follow == null)
+                throw new ApplicationException("Can't find user.");
+            if (query.Follows.IndexOf(nickname) != -1)
+            {
+                query.Follows.Add(follow.Nickname);
+                follow.Followers.Add(query.Nickname);
+            }
+            await client.ReplaceDocumentAsync(
+                    UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                    query);
+            await client.ReplaceDocumentAsync(
+                    UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
+                    follow);
+        }
+
+        public async void UnFollow(string nickname, string password, string follownick)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(nickname))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(follownick))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            if (query == null || !query.Password.Equals(password) || follow == null)
+                throw new ApplicationException("Can't find user.");
+            if (query.Follows.IndexOf(nickname) != -1)
+            {
+                query.Follows.Remove(follow.Nickname);
+                follow.Followers.Remove(query.Nickname);
+            }
+            
+            await client.ReplaceDocumentAsync(
+                    UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                    query);
+            await client.ReplaceDocumentAsync(
+                    UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
+                    follow);
+        }
+
     }
 }

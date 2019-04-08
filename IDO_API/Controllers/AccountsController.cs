@@ -18,6 +18,7 @@ namespace IDO_API.Controllers
         AccountManager accountManager = AccountManager.DefaultManager;
         DataBase.AzureStorage.ContentManager imageContentManager = DataBase.AzureStorage.ContentManager.DefaultManager;
         ContentManager contentManager = ContentManager.DefaultManager;
+
         [HttpPost]
         public async Task<ActionResult<Response>> ApiCreateAccountAsync()
         {
@@ -36,6 +37,7 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(1, e.Message);
             }
         }
+
         [HttpPut]
         public async Task<ActionResult<Response>> ApiUpadateAccountInfoAsync()
         {
@@ -52,16 +54,51 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(2, e.Message);
             }
         }
+
         [HttpGet("/account/{l}/{p}")]
         public ActionResult<Response> ApiGetAccountData(string l, string p)
         {
             try
             {
-                return new AccountDataResponse(0, accountManager.GetAccountData(l,p));
+                return new AccountDataResponse(0, accountManager.GetAccountData(l, p));
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new SimpleResponse(3, e.Message);
+            }
+        }
+        [HttpPost("/api/accounts/follow")]
+        public ActionResult<Response> ApiFollow()
+        {
+            try
+            {
+                var data = Request.Form;
+                var nick = data["nickname"];
+                var pass = data["password"];
+                var follow = data["follow"];
+                accountManager.Follow(nick, pass, follow);
+                return new SimpleResponse();
+            }
+            catch (Exception e)
+            {
+                return new SimpleResponse(4, e.Message);
+            }
+        }
+        [HttpPost("/api/accounts/unfollow")]
+        public ActionResult<Response> ApiUnfollow()
+        {
+            try
+            {
+                var data = Request.Form;
+                var nick = data["nickname"];
+                var pass = data["password"];
+                var follow = data["unfollow"];
+                accountManager.UnFollow(nick, pass, follow);
+                return new SimpleResponse();
+            }
+            catch (Exception e)
+            {
+                return new SimpleResponse(4, e.Message);
             }
         }
     }

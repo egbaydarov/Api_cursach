@@ -7,8 +7,8 @@ using IDO_API.DataBase.CosmosDB;
 using IDO_API.Extensions;
 using IDO_API.Models;
 using System.Web;
-using System.Web.Http;  
-using System.Net.Http;  
+using System.Web.Http;
+using System.Net.Http;
 using System.Net;
 using System.Diagnostics;
 using IDO_API.Models.Responses;
@@ -24,13 +24,12 @@ namespace IDO_API.Controllers
         AccountManager accountManager = AccountManager.DefaultManager;
         DataBase.AzureStorage.ContentManager imageContentManager = DataBase.AzureStorage.ContentManager.DefaultManager;
         ContentManager contentManager = ContentManager.DefaultManager;
-        [HttpGet]
-        public ActionResult<Response> ApiGetUserContent()
+        [HttpGet("/{nickname}/notes")]
+        public ActionResult<Response> ApiGetUserContent(string nickname)
         {
             try
             {
-                var requestData = Request.Form.ToArray();
-                return new NotesDataResponse(0, contentManager.GetNotes(accountManager.GetAccountId(requestData[0].Value)));
+                return new NotesDataResponse(0, contentManager.GetNotes(accountManager.GetAccountId(nickname)));
             }
             catch (Exception e)
             {
@@ -50,14 +49,14 @@ namespace IDO_API.Controllers
                 string l = requestData["nickname"];
                 string p = requestData["password"];
                 string descr = requestData["description"];
-                string imagename = MethodsEx.GetCurrentTimeString()+ "." + ext;
+                string imagename = MethodsEx.GetCurrentTimeString() + "." + ext;
                 using (Stream image = file.OpenReadStream())
                 {
                     if (accountManager.IsValidAcccount(l, p))
                     {
                         var user = accountManager.GetAccountData(l, p);
                         await imageContentManager.UploadAchievementImageAsync(user.Id, imagename, image);
-                        await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename));
+                        await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, new List<string>()));
                         return new SimpleResponse(); // OK
                     }
                     else
@@ -86,7 +85,7 @@ namespace IDO_API.Controllers
                 string notereference = requestData["note"];
                 string newdescr = requestData["description"];
                 string imagename = MethodsEx.GetCurrentTimeString();
-                var newNote = new Note(newdescr, imagename);
+                var newNote = new Note(newdescr, imagename, new List<string>());
                 if (accountManager.IsValidAcccount(l, p))
                 {
                     await contentManager.ReplaceNoteAsync(accountManager.GetAccountId(l), notereference, newNote);
@@ -128,25 +127,47 @@ namespace IDO_API.Controllers
             }
             catch (Exception e)
             {
-                return new SimpleResponse(0, e.Message);
+                return new SimpleResponse(7, e.Message);
             }
         }
         [HttpGet("/{nickname}/{blobreference}/download")]
-        public async Task<ActionResult<Response>> ApiDownloadSingleImage(string nickname, string blobreference)
+        public async Task<ActionResult<Byte[]>> ApiDownloadSingleImage(string nickname, string blobreference)
         {
             try
             {
-                using (MemoryStream str = new MemoryStream())
-                {
-                    await imageContentManager.DownloadAchievementImageAsync(accountManager.GetAccountId(nickname), blobreference, str);
-                    byte[] image = new byte[str.Length];
-                    await str.ReadAsync(image, 0, image.Length);
-                    return new ImageResponse(0, image);
-                }
+                Stream str = await imageContentManager.DownloadAchievementImageAsync(accountManager.GetAccountId(nickname), blobreference);
+
+
+                str.Seek(0, SeekOrigin.Begin);
+
+                return File(str, "image/jpg", blobreference);
+
             }
-            catch (Exception e)
+            catch
             {
-                return new SimpleResponse(0, e.Message);
+                return BadRequest("Wrong Path");
+            }
+        }
+        [HttpPost("/lukas")]
+        public async Task<ActionResult<bool>> ApiNewLukas()
+        {
+            try
+            {
+                var requestData = Request.Form;
+                string l = requestData["nickname"];
+                string p = requestData["password"];
+                string note = requestData["note"];
+                string lukased = requestData["lukased"];
+                if (!accountManager.IsValidAcccount(l, p))
+                {
+                    throw new ApplicationException("Wrong Nickname or Password");
+                }
+                string id = accountManager.GetAccountId(l);
+                return await contentManager.Lukas(id, note, lukased);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
     }
