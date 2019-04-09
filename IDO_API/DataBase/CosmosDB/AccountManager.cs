@@ -1,6 +1,7 @@
 ﻿using IDO_API.Models;
 using Microsoft.Azure.Documents.Client;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -110,6 +111,22 @@ namespace IDO_API.DataBase.CosmosDB
             else
                 throw new ApplicationException("Incorrect Nickname.");
         }
+
+        internal List<User> SearchUser(string searchdata)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Contains(searchdata))
+                          .ToList();
+            if (query == null)
+                throw new ApplicationException("Users Not Found");
+            for(int i = 0; i < query.Count; i++)
+            {
+                query[i].Password = null;
+            }
+            return query;
+
+        }
+
         public bool IsValidAcccount(string nickname, string password)
         {
             var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
@@ -131,7 +148,7 @@ namespace IDO_API.DataBase.CosmosDB
                           .FirstOrDefault();
             if (query == null || !query.Password.Equals(password) || follow == null)
                 throw new ApplicationException("Can't find user.");
-            if (query.Follows.IndexOf(nickname) != -1)
+            if (query.Follows.IndexOf(nickname) == -1)
             {
                 query.Follows.Add(follow.Nickname);
                 follow.Followers.Add(query.Nickname);
@@ -156,10 +173,9 @@ namespace IDO_API.DataBase.CosmosDB
                           .FirstOrDefault();
             if (query == null || !query.Password.Equals(password) || follow == null)
                 throw new ApplicationException("Can't find user.");
-            if (query.Follows.IndexOf(nickname) != -1)
+            if (!query.Follows.Remove(follow.Nickname) && !follow.Followers.Remove(query.Nickname))
             {
-                query.Follows.Remove(follow.Nickname);
-                follow.Followers.Remove(query.Nickname);
+                throw new ApplicationException("Cant unfollow");
             }
             
             await client.ReplaceDocumentAsync(
@@ -169,6 +185,15 @@ namespace IDO_API.DataBase.CosmosDB
                     UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
                     follow);
         }
-
+        public User protectedAccountData(string nickname)
+        {
+            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                          .Where(user => user.Nickname.Equals(nickname))
+                          .AsEnumerable()
+                          .FirstOrDefault();
+            if (query == null)
+                throw new ApplicationException("Wrong Nickname.");
+            return query;
+        }
     }
 }

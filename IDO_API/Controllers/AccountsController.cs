@@ -101,5 +101,31 @@ namespace IDO_API.Controllers
                 return new SimpleResponse(4, e.Message);
             }
         }
+        [HttpGet("/searchuser/{nickname}")]
+        public ActionResult<List<User>> ApiUserDataSearch(string nickname)
+        {
+            try
+            {
+               var users = accountManager.SearchUser(nickname);
+                return users;
+            }
+            catch (Exception)
+            {
+                return BadRequest("Can't find users.");
+            }
+        }
+        [HttpGet("/account/{nickname}")]
+        public ActionResult<User> ApiGetUserData(string nickname)
+        {
+            try
+            {
+                var user = accountManager.protectedAccountData(nickname);
+                return new User() { Followers = user.Followers, Follows = user.Follows, Avatar = user.Avatar, Nickname = nickname };
+            }
+            catch (Exception)
+            {
+                return BadRequest("Can't get user data.");
+            }
+        }
     }
 }
