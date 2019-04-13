@@ -11,10 +11,17 @@ namespace IDO_API.DataBase.CosmosDB
     public class ContentManager
     {
         static ContentManager defaultInstance = new ContentManager();
+#if DEBUG
         const string accountURL = @"https://localhost:8081";
         const string accountKey = @"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
         const string databaseId = @"IDO";
         const string collectionId = @"content";
+#else
+        const string accountURL = @"https://pidstagram.documents.azure.com:443/";
+        const string accountKey = @"JYfaV28KzEQEOr8jzJdwojr3TBb6eu9PBvLbL0sj0quyZahWE3TeuWyFAhFQj3RotcvgQo9cj91ZEzmkMonXOg==";
+        const string databaseId = @"IDO";
+        const string collectionId = @"content";
+#endif
 
         private Uri collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collectionId);
 
@@ -111,11 +118,11 @@ namespace IDO_API.DataBase.CosmosDB
 
 
         }
-        public async Task<bool> Lukas(string userId, string notename, string lukasername)
+        public async Task<bool> Lukas(string userNicknameWhoGivesLukas, string notename, string userIdWhoTakesLukas)
         {
             bool key;
-            string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+            string documentId = userIdWhoTakesLukas.RemoveGuidDelimiters();
+            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                           .Where(content => content.Id.Equals(documentId))
                           .AsEnumerable()
                           .FirstOrDefault()
@@ -123,23 +130,23 @@ namespace IDO_API.DataBase.CosmosDB
                           .Where(x => x.ImageReference.Equals(notename))
                           .AsEnumerable()
                           .FirstOrDefault();
-            var query2 = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+            var query2 = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                           .Where(content => content.Id.Equals(documentId))
                           .AsEnumerable()
                           .FirstOrDefault();
-            int index = query2.notes.IndexOf(query);
+            int index = query2.notes.FindIndex((x)=> x.ImageReference.Equals(query.ImageReference));
             if (query == null || query2 == null)
                 throw new ApplicationException("Incorrect Note Name");
-            if (query.Lukasers.IndexOf(lukasername) == -1)
+            if (query2.notes[index].Lukasers.IndexOf(userNicknameWhoGivesLukas) == -1)
             {
                 query.LukasCount++;
-                query.Lukasers.Add(userId);
+                query.Lukasers.Add(userNicknameWhoGivesLukas);
                 key = true;
             }
             else
             {
                 query.LukasCount--;
-                query.Lukasers.Remove(userId);
+                query.Lukasers.Remove(userNicknameWhoGivesLukas);
                 key = false;
             }
             query2.notes[index] = query;

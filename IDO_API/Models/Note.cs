@@ -27,5 +27,10 @@ namespace IDO_API.Models
 
         [JsonProperty(PropertyName = "lukasers")]
         public  List<string>  Lukasers { get; set; }
+        //public override bool Equals(object obj)
+        //{
+        //    var note = obj as Note;
+        //    return note.Description.Equals(Description) && note.ImageReference.Equals(ImageReference) && note.LukasCount.Equals(LukasCount) && note.Lukasers.Equals(Lukasers);
+        //}
     }
 }

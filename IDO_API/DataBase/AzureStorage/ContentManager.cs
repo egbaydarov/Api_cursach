@@ -11,9 +11,14 @@ namespace IDO_API.DataBase.AzureStorage
 {
     public class ContentManager
     {
-        static string storageConnectionString = "UseDevelopmentStorage=true";
-        static  CloudBlobClient cloudBlobClient;
+#if DEBUG
+        static string storageConnectionString = @"UseDevelopmentStorage=true";
 
+#else
+        static string storageConnectionString = @"DefaultEndpointsProtocol=https;AccountName=mirrorstorage2;AccountKey=rwyHKda1stz2mtGP39HCyO3KVJgy2DzO8GOhlg/lmgl1fJBH9EoFr1eOHkSIXU/tCPbvshnQ5+oHAHv8NrGm+A==;EndpointSuffix=core.windows.net";
+
+#endif
+        static CloudBlobClient cloudBlobClient;
 
         static ContentManager defaultInstance = new ContentManager();
         public ContentManager()

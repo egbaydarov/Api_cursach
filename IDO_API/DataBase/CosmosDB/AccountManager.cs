@@ -11,10 +11,18 @@ namespace IDO_API.DataBase.CosmosDB
     {
         static AccountManager defaultInstance = new AccountManager();
 
+        
+#if DEBUG
         const string accountURL = @"https://localhost:8081";
         const string accountKey = @"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
         const string databaseId = @"IDO";
         const string collectionId = @"accounts";
+#else
+        const string accountURL = @"https://pidstagram.documents.azure.com:443/";
+        const string accountKey = @"JYfaV28KzEQEOr8jzJdwojr3TBb6eu9PBvLbL0sj0quyZahWE3TeuWyFAhFQj3RotcvgQo9cj91ZEzmkMonXOg==";
+        const string databaseId = @"IDO";
+        const string collectionId = @"accounts";
+#endif
 
         private Uri collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collectionId);
 

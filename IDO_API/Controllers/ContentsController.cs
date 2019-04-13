@@ -162,8 +162,8 @@ namespace IDO_API.Controllers
                 {
                     throw new ApplicationException("Wrong Nickname or Password");
                 }
-                string id = accountManager.GetAccountId(l);
-                return await contentManager.Lukas(id, note, lukased);
+                string id = accountManager.GetAccountId(lukased);
+                return await contentManager.Lukas(l, note, id);
             }
             catch (Exception ex)
             {
