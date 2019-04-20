@@ -10,9 +10,12 @@
     <WebStackScaffolding_LayoutPageFile />
     <WebStackScaffolding_IsAsyncSelected>False</WebStackScaffolding_IsAsyncSelected>
     <ActiveDebugProfile>IDO_API</ActiveDebugProfile>
-    <NameOfLastUsedPublishProfile>IDOAPI20190409055028 - Web Deploy</NameOfLastUsedPublishProfile>
+    <NameOfLastUsedPublishProfile>IDOAPI20190414023717 - Web Deploy</NameOfLastUsedPublishProfile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebuggerFlavor>ProjectDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebuggerFlavor>ProjectDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

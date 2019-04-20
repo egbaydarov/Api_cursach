@@ -43,115 +43,171 @@ namespace IDO_API.DataBase.CosmosDB
                 defaultInstance = value;
             }
         }
-        public async Task CreateContentDocumentAsync(string userId)
+        public async Task<short> CreateContentDocumentAsync(string userId)
         {
-            List<Note> notes = new List<Note>();
+            try
+            {
+                List<Note> notes = new List<Note>();
 
-            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                new Content(
-                    userId.RemoveGuidDelimiters(),
-                    notes));
+                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
+                    new Content(
+                        userId.RemoveGuidDelimiters(),
+                        notes));
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
 
-        public async Task AddNoteAsync(string userId, Note note)
+        public async Task<short> AddNoteAsync(string userId, Note note)
         {
-            string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
-                .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query != null)
+            try
             {
+                string documentId = userId.RemoveGuidDelimiters();
+
+                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
+                    .Where(content => content.Id.Equals(documentId))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                if (query == null)
+                    throw new ApplicationException("Incorrect Note Data");
+
                 query.notes.Add(note);
                 await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+                return 0;
             }
-            else throw new ApplicationException("Incorrect User Data");
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
 
-        public async Task DeleteNoteAsync(string userId, Note note)
+        public async Task<short> DeleteNoteAsync(string userId, string note)
         {
-            string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                          .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            query.notes.RemoveAll(x => x.ImageReference.Equals(note.ImageReference) && x.Description.Equals(note.Description));
-            await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+            try
+            {
+                string documentId = userId.RemoveGuidDelimiters();
+
+                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                              .Where(content => content.Id.Equals(documentId))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                if (query == null)
+                    throw new ApplicationException("Incorrect Note Data");
+
+                query.notes.RemoveAll(x => x.ImageReference.Equals(note));
+
+                await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
 
-        public async Task ReplaceNoteAsync(string userId, string oldnoteref, Note newNote)
+        public async Task<short> ReplaceNoteAsync(string userId, string oldnoteref, Note newNote)
         {
-            string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                          .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            query.notes.RemoveAll(x => x.ImageReference.Equals(oldnoteref));
-            query.notes.Add(newNote);
-            await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+            try
+            {
+                string documentId = userId.RemoveGuidDelimiters();
+
+                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                              .Where(content => content.Id.Equals(documentId))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                if (query == null)
+                    throw new ApplicationException("Incorrect Note Data");
+
+                query.notes.RemoveAll(x => x.ImageReference.Equals(oldnoteref));
+                query.notes.Add(newNote);
+
+                await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id), query);
+
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
         public List<Note> GetNotes(string userId)
         {
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
-                .Where(content => content.Id.Equals(userId.RemoveGuidDelimiters()))
-                .AsEnumerable()
-                .FirstOrDefault();
-            if (query == null)
-                throw new ApplicationException("Incorrect user ID");
-
-            return query.notes;
-        }
-        public Note GetSingleNote(string userId, string notename)
-        {
-            string documentId = userId.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                          .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault()
-                          .notes
-                          .Where(x => x.ImageReference.Equals(notename))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query == null)
-                throw new ApplicationException("Incorrect Note Data.");
-            return query;
-
-
-        }
-        public async Task<bool> Lukas(string userNicknameWhoGivesLukas, string notename, string userIdWhoTakesLukas)
-        {
-            bool key;
-            string documentId = userIdWhoTakesLukas.RemoveGuidDelimiters();
-            var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
-                          .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault()
-                          .notes
-                          .Where(x => x.ImageReference.Equals(notename))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            var query2 = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
-                          .Where(content => content.Id.Equals(documentId))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            int index = query2.notes.FindIndex((x)=> x.ImageReference.Equals(query.ImageReference));
-            if (query == null || query2 == null)
-                throw new ApplicationException("Incorrect Note Name");
-            if (query2.notes[index].Lukasers.IndexOf(userNicknameWhoGivesLukas) == -1)
+            try
             {
-                query.LukasCount++;
-                query.Lukasers.Add(userNicknameWhoGivesLukas);
-                key = true;
+                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
+                        .Where(content => content.Id.Equals(userId.RemoveGuidDelimiters()))
+                        .AsEnumerable()
+                        .FirstOrDefault();
+                if (query == null)
+                    throw new ApplicationException("Incorrect user ID");
+ 
+                return query.notes;
             }
-            else
+            catch (Exception e)
             {
-                query.LukasCount--;
-                query.Lukasers.Remove(userNicknameWhoGivesLukas);
-                key = false;
+                Console.Error.WriteLine(e.Message);
+                return null;
             }
-            query2.notes[index] = query;
-            await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, query2.Id), query2);
-            return key;
         }
+        public async Task<bool?> AddOrDeleteRespectFromUser(string userFromNickname, string notename, string userToId)
+        {
+            try
+            {
+                bool IsRespected;
+
+                string documentId = userToId.RemoveGuidDelimiters();
+
+                var noteQuery = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
+                              .Where(content => content.Id.Equals(documentId))
+                              .AsEnumerable()
+                              .FirstOrDefault()
+                              .notes
+                              .Where(x => x.ImageReference.Equals(notename))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                var contentQuery = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
+                              .Where(content => content.Id.Equals(documentId))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                int index = contentQuery.notes.FindIndex((x) => x.ImageReference.Equals(noteQuery.ImageReference));
+
+                if (noteQuery == null || contentQuery == null || index == -1)
+                    throw new ApplicationException("Incorrect Note Name");
+
+                if (contentQuery.notes[index].Lukasers.IndexOf(userFromNickname) == -1)
+                {
+                    noteQuery.LukasCount++;
+                    noteQuery.Lukasers.Add(userFromNickname);
+                    IsRespected = true;
+                }
+                else
+                {
+                    noteQuery.LukasCount--;
+                    noteQuery.Lukasers.Remove(userFromNickname);
+                    IsRespected = false;
+                }
+                contentQuery.notes[index] = noteQuery;
+                await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, contentQuery.Id), contentQuery);
+                return IsRespected;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
+        }
+
     }
 }

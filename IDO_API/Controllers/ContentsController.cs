@@ -11,7 +11,6 @@ using System.Web.Http;
 using System.Net.Http;
 using System.Net;
 using System.Diagnostics;
-using IDO_API.Models.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,58 +23,68 @@ namespace IDO_API.Controllers
         AccountManager accountManager = AccountManager.DefaultManager;
         DataBase.AzureStorage.ContentManager imageContentManager = DataBase.AzureStorage.ContentManager.DefaultManager;
         ContentManager contentManager = ContentManager.DefaultManager;
+
+
         [HttpGet("/{nickname}/notes")]
-        public ActionResult<Response> ApiGetUserContent(string nickname)
+        public ActionResult<List<Note>> ApiGetUserContent(string nickname)
         {
             try
             {
-                return new NotesDataResponse(0, contentManager.GetNotes(accountManager.GetAccountId(nickname)));
+                string id = accountManager.GetAccountId(nickname);
+
+                if (id == null)
+                    return BadRequest("Wrong users id");
+
+                var result = contentManager.GetNotes(id);
+
+                if (result == null)
+                    return BadRequest("Can't get user notes");
+
+                return result;
             }
             catch (Exception e)
             {
-                return new SimpleResponse(4, e.Message);
+                return BadRequest(e.Message);
             }
         }
         [HttpPut]
-        public async Task<ActionResult<Response>> ApiPutNote([FromHeader]IFormFile file)
+        public async Task<ActionResult> ApiPutNote([FromHeader]IFormFile file)
         {
             try
             {
                 string ext = file.FileName.Split('.')[1].ToLower();
                 if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
                     throw new ApplicationException("Wrong image extension.");
-                var requestData = Request.Form;
 
+                var requestData = Request.Form;
                 string l = requestData["nickname"];
                 string p = requestData["password"];
                 string descr = requestData["description"];
+
                 string imagename = MethodsEx.GetCurrentTimeString() + "." + ext;
+
                 using (Stream image = file.OpenReadStream())
                 {
-                    if (accountManager.IsValidAcccount(l, p))
-                    {
-                        var user = accountManager.GetAccountData(l, p);
-                        await imageContentManager.UploadAchievementImageAsync(user.Id, imagename, image);
-                        await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, new List<string>()));
-                        return new SimpleResponse(); // OK
-                    }
-                    else
-                    {
+                    if (!accountManager.IsValidAcccount(l, p))
                         throw new ApplicationException("Inccorect user data.");
-                    }
+
+                    var user = accountManager.GetAccountData(l, p);
+                    await imageContentManager.UploadImageAsync(user.Id, imagename, image);
+                    await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, new List<string>()));
+                    return Ok();
                 }
             }
             catch (IndexOutOfRangeException)
             {
-                return new SimpleResponse(5, "Incorrect image file name.");
+                return BadRequest("Incorrect image file name.");
             }
             catch (Exception e)
             {
-                return new SimpleResponse(5, e.Message);
+                return BadRequest(e.Message);
             }
         }
         [HttpPost]
-        public async Task<ActionResult<Response>> ApiReplaceDescription()
+        public async Task<ActionResult> ApiReplaceDescription()
         {
             try
             {
@@ -85,71 +94,76 @@ namespace IDO_API.Controllers
                 string notereference = requestData["note"];
                 string newdescr = requestData["description"];
                 string imagename = MethodsEx.GetCurrentTimeString();
+
                 var newNote = new Note(newdescr, imagename, new List<string>());
+
                 if (accountManager.IsValidAcccount(l, p))
                 {
-                    await contentManager.ReplaceNoteAsync(accountManager.GetAccountId(l), notereference, newNote);
-                    return new SimpleResponse();
-                }
-                else
-                {
-                    throw new ApplicationException("Inncorrect User Data.");
-                }
+                    string id = accountManager.GetAccountId(l);
+                    if (id == null)
+                        return BadRequest("Cant find user.");
 
+                    var result = await contentManager.ReplaceNoteAsync(id, notereference, newNote);
+                    if (result == -1)
+                        return BadRequest("Cant replace note.");
+
+                    return Ok();
+                }
+                return BadRequest("Is not valid account.");
             }
             catch (Exception e)
             {
-                return new SimpleResponse(0, e.Message);
+                return BadRequest(e.Message);
             }
         }
         [HttpDelete]
-        public async Task<ActionResult<Response>> ApiDeleteNote()
+        public async Task<ActionResult> ApiDeleteNote()
         {
             try
             {
                 string l = Request.Form["nickname"];
                 string p = Request.Form["password"];
                 string blobref = Request.Form["note"];
-                await imageContentManager.DeleteAchievementImageAsync(accountManager.GetAccountId(l), blobref);
-                return new SimpleResponse();
+                string id = accountManager.GetAccountId(l);
+                if (id == null)
+                    return BadRequest("Cant find user");
+
+                var result = await imageContentManager.DeleteImageAsync(id, blobref);
+
+                if (result == -1)
+                    return BadRequest("Cant delete Image");
+
+                result = await contentManager.DeleteNoteAsync(id, blobref);
+
+                if (result == -1)
+                    return BadRequest("Cant delete Image description");
+
+                return Ok();
             }
             catch (Exception e)
             {
-                return new SimpleResponse(6, e.Message);
-            }
-        }
-        [HttpGet("/image/{nickname}/{blobreference}")]
-        public ActionResult<Response> ApiGetSingleNote(string nickname, string blobreference)
-        {
-            try
-            {
-                return new SingleNoteResponse(0, contentManager.GetSingleNote(accountManager.GetAccountId(nickname), blobreference));
-            }
-            catch (Exception e)
-            {
-                return new SimpleResponse(7, e.Message);
+                return BadRequest(e.Message);
             }
         }
         [HttpGet("/{nickname}/{blobreference}/download")]
-        public async Task<ActionResult<Byte[]>> ApiDownloadSingleImage(string nickname, string blobreference)
+        public async Task<ActionResult> ApiDownloadSingleImage(string nickname, string blobreference)
         {
             try
             {
-                Stream str = await imageContentManager.DownloadAchievementImageAsync(accountManager.GetAccountId(nickname), blobreference);
-
+                Stream str = await imageContentManager.DownloadImageAsync(accountManager.GetAccountId(nickname), blobreference);
+                if (str == null)
+                    return BadRequest("Wrong Path");
 
                 str.Seek(0, SeekOrigin.Begin);
-
                 return File(str, "image/jpg", blobreference);
-
             }
-            catch
+            catch (Exception e)
             {
-                return BadRequest("Wrong Path");
+                return BadRequest(e.Message);
             }
         }
         [HttpPost("/lukas")]
-        public async Task<ActionResult<bool>> ApiNewLukas()
+        public async Task<ActionResult<bool>> ApiGetRespect()
         {
             try
             {
@@ -158,12 +172,19 @@ namespace IDO_API.Controllers
                 string p = requestData["password"];
                 string note = requestData["note"];
                 string lukased = requestData["lukased"];
+
                 if (!accountManager.IsValidAcccount(l, p))
-                {
-                    throw new ApplicationException("Wrong Nickname or Password");
-                }
+                    return BadRequest("Wrong username or password.");
+
                 string id = accountManager.GetAccountId(lukased);
-                return await contentManager.Lukas(l, note, id);
+                if (id == null)
+                    return BadRequest("Can't find user.");
+
+                var result = await contentManager.AddOrDeleteRespectFromUser(l, note, id);
+                if (result == null)
+                    return BadRequest("Can't handle with respect method.");
+
+                return result;
             }
             catch (Exception ex)
             {

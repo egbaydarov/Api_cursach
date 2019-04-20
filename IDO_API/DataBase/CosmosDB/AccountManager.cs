@@ -1,8 +1,10 @@
-﻿using IDO_API.Models;
+﻿using IDO_API.DataBase.Hashing;
+using IDO_API.Models;
 using Microsoft.Azure.Documents.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace IDO_API.DataBase.CosmosDB
@@ -11,7 +13,6 @@ namespace IDO_API.DataBase.CosmosDB
     {
         static AccountManager defaultInstance = new AccountManager();
 
-        
 #if DEBUG
         const string accountURL = @"https://localhost:8081";
         const string accountKey = @"C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
@@ -51,157 +52,326 @@ namespace IDO_API.DataBase.CosmosDB
                 defaultInstance = value;
             }
         }
-        public async Task UpadateAccountInfoAsync(string oldPass, User user)
+        public async Task<short> UpadateAccountInfoAsync(string oldPass, User user)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                              .Where(acc => acc.Id.Equals(user.Id))
-                              .AsEnumerable()
-                              .FirstOrDefault();
-            if (query != null && query.Password.Equals(oldPass))
+            try
             {
-                var query2 = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                              .Where(acc => acc.Nickname.Equals(user.Nickname))
-                              .AsEnumerable()
-                              .FirstOrDefault();
-                if(query == null)
-                await client.ReplaceDocumentAsync(
-                    UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
-                    user);
-                else
-                {
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                      .Where(acc => acc.Id.Equals(user.Id))
+                                      .AsEnumerable()
+                                      .FirstOrDefault();
+
+                if (query == null || !query.Password.Equals(oldPass))
+                    throw new ApplicationException("Incorrect ID or Password.");
+
+                var checkForUserExistQuery = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(acc => acc.Nickname.Equals(user.Nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                if (checkForUserExistQuery != null)
                     throw new ApplicationException("Nickname already taken.");
-                }
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        user);
+                return 0;
+
             }
-            else
+            catch (Exception e)
             {
-                throw new ApplicationException("Incorrect ID or Password.");
+                Console.Error.WriteLine(e.Message);
+                return -1;
             }
         }
-        public async Task CreateAccountAsync(User newAccount)
+        public async Task<short> CreateAccountAsync(User newAccount)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(newAccount.Nickname))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query == null)
+            try
             {
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(newAccount.Nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+
+                if (query != null)
+                    throw new ApplicationException("Account Already Exists.");
+
                 await client.CreateDocumentAsync(collectionLink, newAccount);
+                return 0;
             }
-            else
+            catch (Exception e)
             {
-                throw new ApplicationException("Account Already Exists.");
+                Console.Error.WriteLine(e.Message);
+                return -1;
             }
 
         }
-        public User GetAccountData(string l, string p)
+        public User GetAccountData(string nickname, string password)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(l))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query != null && query.Password.Equals(p))
+            try
             {
+                string passHash = SHA.GenerateSaltedHashBase64(password);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+                if (query == null || !query.Password.Equals(passHash))
+                    throw new ApplicationException("Incorrect Login/Password.");
+                query.Password = password;
                 return query;
             }
-            else
-                throw new ApplicationException("Incorrect Login/Password.");
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
         }
         public string GetAccountId(string username)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(username))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query != null)
+            try
             {
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                 .Where(user => user.Nickname.Equals(username))
+                                 .AsEnumerable()
+                                 .FirstOrDefault();
+                if (query == null)
+                    throw new ApplicationException("Incorrect Nickname.");
                 return query.Id;
             }
-            else
-                throw new ApplicationException("Incorrect Nickname.");
-        }
-
-        internal List<User> SearchUser(string searchdata)
-        {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Contains(searchdata))
-                          .ToList();
-            if (query == null)
-                throw new ApplicationException("Users Not Found");
-            for(int i = 0; i < query.Count; i++)
+            catch (Exception e)
             {
-                query[i].Password = null;
+                Console.Error.WriteLine(e.Message);
+                return null;
             }
-            return query;
-
         }
 
-        public bool IsValidAcccount(string nickname, string password)
+        internal List<User> FindUserByNickname(string searchdata)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(nickname))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            return query != null && query.Password.Equals(password);
-        }
-
-        public async void Follow(string nickname, string password, string follownick)
-        {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(nickname))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(follownick))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query == null || !query.Password.Equals(password) || follow == null)
-                throw new ApplicationException("Can't find user.");
-            if (query.Follows.IndexOf(nickname) == -1)
+            try
             {
-                query.Follows.Add(follow.Nickname);
-                follow.Followers.Add(query.Nickname);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Contains(searchdata))
+                                  .ToList();
+
+                if (query == null)
+                    throw new ApplicationException("Users Not Found");
+
+                for (int i = 0; i < query.Count; i++)
+                {
+                    query[i].Password = null;
+                }
+
+                return query;
             }
-            await client.ReplaceDocumentAsync(
-                    UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
-                    query);
-            await client.ReplaceDocumentAsync(
-                    UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
-                    follow);
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
         }
 
-        public async void UnFollow(string nickname, string password, string follownick)
+        public bool IsValidAcccount(string nickname, string passwordUnhased)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(nickname))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(follownick))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query == null || !query.Password.Equals(password) || follow == null)
-                throw new ApplicationException("Can't find user.");
-            if (!query.Follows.Remove(follow.Nickname) && !follow.Followers.Remove(query.Nickname))
+            try
             {
-                throw new ApplicationException("Cant unfollow");
+                string password = SHA.GenerateSaltedHashBase64(passwordUnhased);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                return query != null && query.Password.Equals(password);
             }
-            
-            await client.ReplaceDocumentAsync(
-                    UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
-                    query);
-            await client.ReplaceDocumentAsync(
-                    UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
-                    follow);
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return false;
+            }
         }
-        public User protectedAccountData(string nickname)
+
+        public async Task<short> Follow(string nickname, string passwordUnhashed, string follownick)
         {
-            var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
-                          .Where(user => user.Nickname.Equals(nickname))
-                          .AsEnumerable()
-                          .FirstOrDefault();
-            if (query == null)
-                throw new ApplicationException("Wrong Nickname.");
-            return query;
+            try
+            {
+                string password = SHA.GenerateSaltedHashBase64(passwordUnhashed);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                              .Where(user => user.Nickname.Equals(follownick))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                if (query == null || !query.Password.Equals(password) || follow == null)
+                    throw new ApplicationException("Can't find user.");
+
+                if (query.Follows.IndexOf(nickname) == -1)
+                {
+                    query.Follows.Add(follow.Nickname);
+                    follow.Followers.Add(query.Nickname);
+                }
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        query);
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
+                        follow);
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
+        }
+
+        public async Task<short> UnFollow(string nickname, string passwordUnhashed, string follownick)
+        {
+            try
+            {
+
+                string password = SHA.GenerateSaltedHashBase64(passwordUnhashed);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                var follow = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                              .Where(user => user.Nickname.Equals(follownick))
+                              .AsEnumerable()
+                              .FirstOrDefault();
+
+                if (query == null || !query.Password.Equals(password) || follow == null)
+                    throw new ApplicationException("Can't find user.");
+
+                if (!query.Follows.Remove(follow.Nickname) && !follow.Followers.Remove(query.Nickname))
+                    throw new ApplicationException("Cant unfollow");
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        query);
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, follow.Id),
+                        follow);
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
+        }
+        public User GetProtectedAccountData(string nickname)
+        {
+            try
+            {
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+                if (query == null)
+                    throw new ApplicationException("Wrong Nickname.");
+                query.Password = null;
+                return query;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
+        }
+
+        public async Task<short> AddGoal(string userNickname, string nickname, string description)
+        {
+            try
+            {
+                string id = GetAccountId(userNickname);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(acc => acc.Id.Equals(id))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+                //TEMP!!!
+                if (query.Goals == null)
+                    query.Goals = new List<Goal>();
+
+                if (query.Goals.Where(x => x.Nickname.Equals(nickname) && x.Description.Equals(description)).AsEnumerable()
+                                  .FirstOrDefault() != null)
+                    throw new ApplicationException("Goal Already Added");
+
+                query.Goals.Add(new Goal { Description = description, Nickname = nickname });
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        query);
+
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
+        }
+
+        public async Task<short> RemoveGoal(string userNickname, string nickname, string description)
+        {
+            try
+            {
+                string id = GetAccountId(userNickname);
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(acc => acc.Id.Equals(id))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                if (query.Goals.Where(x => x.Nickname.Equals(nickname) && x.Description.Equals(description)).AsEnumerable()
+                                  .FirstOrDefault() == null)
+                    throw new ApplicationException("Goal doesn't exist");
+
+                query.Goals.RemoveAll(x => x.Nickname.Equals(nickname) && x.Description.Equals(description));
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        query);
+
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
+        }
+        public async Task<short> UploadAvatar(string nickname, string password, string avatarreference)
+        {
+            try
+            {
+                var query = client.CreateDocumentQuery<User>(collectionLink, new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true })
+                                  .Where(user => user.Nickname.Equals(nickname))
+                                  .AsEnumerable()
+                                  .FirstOrDefault();
+
+                if (query == null)
+                    throw new ApplicationException("Wrong users data");
+
+                query.Avatar = avatarreference;
+
+                await client.ReplaceDocumentAsync(
+                        UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
+                        query);
+
+                return 0;
+
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
     }
 }

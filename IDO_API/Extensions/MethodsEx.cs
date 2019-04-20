@@ -10,12 +10,12 @@ namespace IDO_API.Extensions
         public static string GetCurrentTimeString()
         {
             var time = DateTime.Now;
-            return time.Year.ToString("D4") +
-                time.Month.ToString("D2") +
-                time.Day.ToString("D2") +
-                time.Hour.ToString("D2") +
-                time.Minute.ToString("D2") +
-                time.Second.ToString("D2") +
+            return time.Year.ToString("D4") + "-" + 
+                time.Month.ToString("D2") + "-" +
+                time.Day.ToString("D2") + "-" +
+                time.Hour.ToString("D2") + "-" +
+                time.Minute.ToString("D2") + "-" +
+                time.Second.ToString("D2") + "-" +
                 time.Millisecond.ToString("D4");
         }
 

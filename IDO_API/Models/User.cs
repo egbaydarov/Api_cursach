@@ -18,7 +18,7 @@ namespace IDO_API.Models
             Password = password;
             Follows = new List<string>();
             Followers = new List<string>();
-
+            Goals = new List<Goal>();
         }
 
         [JsonProperty(PropertyName = "id")]
@@ -36,5 +36,8 @@ namespace IDO_API.Models
 
         [JsonProperty(PropertyName = "followers")]
         public List<string> Followers { get; set; }
+
+        [JsonProperty(PropertyName = "goals")]
+        public List<Goal> Goals { get; set; }
     }
 }

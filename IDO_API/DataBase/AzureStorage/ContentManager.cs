@@ -29,7 +29,7 @@ namespace IDO_API.DataBase.AzureStorage
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"{e.Message}");
+                Console.Error.WriteLine(e.Message);
             }
         }
 
@@ -39,36 +39,72 @@ namespace IDO_API.DataBase.AzureStorage
             {
                 return defaultInstance;
             }
-            private set
+            set
             {
                 defaultInstance = value;
             }
         }
 
 
-        public async Task UploadAchievementImageAsync(string containerReference, string blobReference, Stream image)
+        public async Task<short> UploadImageAsync(string containerReference, string blobReference, Stream image)
         {
-            var container = cloudBlobClient.GetContainerReference(containerReference);
-            var blob = container.GetBlockBlobReference(blobReference);
+            try
+            {
+                var container = cloudBlobClient.GetContainerReference(containerReference);
+                var blob = container.GetBlockBlobReference(blobReference);
 
-            await blob.UploadFromStreamAsync(image);
+                await blob.UploadFromStreamAsync(image);
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
-        public async Task CreateContainerAsync(string containerReference)
+        public async Task<short> CreateContainerAsync(string containerReference)
         {
-            await cloudBlobClient.GetContainerReference(containerReference).CreateAsync();
+            try
+            {
+                await cloudBlobClient.GetContainerReference(containerReference).CreateAsync();
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
         
-        public async Task DeleteAchievementImageAsync(string containerReference, string blobReference)
+        public async Task<short> DeleteImageAsync(string containerReference, string blobReference)
         {
-            var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
-            await blob.DeleteAsync();
+            try
+            {
+                var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
+                await blob.DeleteAsync();
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return -1;
+            }
         }
-        public async Task<Stream> DownloadAchievementImageAsync(string containerReference, string blobReference)
+        public async Task<Stream> DownloadImageAsync(string containerReference, string blobReference)
         {
-            var stream = new MemoryStream();
-            var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
-            blob.DownloadToStream(stream);
-            return stream;
+
+            try
+            {
+                var stream = new MemoryStream();
+                var blob = await cloudBlobClient.GetContainerReference(containerReference).GetBlobReferenceFromServerAsync(blobReference);
+                blob.DownloadToStream(stream);
+                return stream;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
         }
     }
 }
