@@ -8,12 +8,13 @@ namespace IDO_API.Models
 {
     public class Note
     {
-        public Note(string description, string imageReference, List<string> lukasers, int lukascount = 0)
+        public Note(string description, string imageReference, List<string> eximages = null)
         {
             Description = description;
             ImageReference = imageReference;
-            LukasCount = lukascount;
-            Lukasers = lukasers;
+            LukasCount = 0;
+            Lukasers = new List<string>();
+            ExImages = eximages;
         }
 
         [JsonProperty(PropertyName = "description")]
@@ -27,10 +28,8 @@ namespace IDO_API.Models
 
         [JsonProperty(PropertyName = "lukasers")]
         public  List<string>  Lukasers { get; set; }
-        //public override bool Equals(object obj)
-        //{
-        //    var note = obj as Note;
-        //    return note.Description.Equals(Description) && note.ImageReference.Equals(ImageReference) && note.LukasCount.Equals(LukasCount) && note.Lukasers.Equals(Lukasers);
-        //}
+
+        [JsonProperty(PropertyName = "eximages")]
+        public List<string> ExImages { get; set; }
     }
 }

@@ -48,31 +48,76 @@ namespace IDO_API.Controllers
             }
         }
         [HttpPut]
-        public async Task<ActionResult> ApiPutNote([FromHeader]IFormFile file)
+        public async Task<ActionResult> ApiPutNote([FromHeader]IFormFile file, IFormFile file1 = null, IFormFile file2 = null, IFormFile file3 = null, IFormFile file4 = null)
         {
             try
             {
-                string ext = file.FileName.Split('.')[1].ToLower();
-                if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
-                    throw new ApplicationException("Wrong image extension.");
-
                 var requestData = Request.Form;
                 string l = requestData["nickname"];
                 string p = requestData["password"];
                 string descr = requestData["description"];
-
-                string imagename = MethodsEx.GetCurrentTimeString() + "." + ext;
-
-                using (Stream image = file.OpenReadStream())
+                if (!accountManager.IsValidAcccount(l, p))
+                    throw new ApplicationException("Inccorect user data.");
+                var user = accountManager.GetAccountData(l, p);
+                string date = MethodsEx.GetCurrentTimeString();
+                string imagename = null;
+                string imagename1 = null;
+                string imagename2 = null;
+                string imagename3 = null;
+                string imagename4 = null;
+                if (file != null)
                 {
-                    if (!accountManager.IsValidAcccount(l, p))
-                        throw new ApplicationException("Inccorect user data.");
-
-                    var user = accountManager.GetAccountData(l, p);
-                    await imageContentManager.UploadImageAsync(user.Id, imagename, image);
-                    await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, new List<string>()));
-                    return Ok();
+                    string ext = file.FileName.Split('.')[1].ToLower();
+                    if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                        throw new ApplicationException("Wrong image extension.");
+                    imagename = date + "." + ext;
+                    using (Stream image = file.OpenReadStream())
+                        await imageContentManager.UploadImageAsync(user.Id, imagename, image);
+                    
                 }
+                if (file1 != null)
+                {
+                    string ext = file1.FileName.Split('.')[1].ToLower();
+                    if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                        throw new ApplicationException("Wrong image extension.");
+                    imagename1 = date + "-1." + ext;
+                    using (Stream image = file1.OpenReadStream())
+                        await imageContentManager.UploadImageAsync(user.Id, imagename1, image);
+                }
+                if (file2 != null)
+                {
+                    string ext = file2.FileName.Split('.')[1].ToLower();
+                    if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                        throw new ApplicationException("Wrong image extension.");
+                    imagename2 = date + "-2." + ext;
+                    using (Stream image = file2.OpenReadStream())
+                        await imageContentManager.UploadImageAsync(user.Id, imagename2, image);
+                }
+                if (file3 != null)
+                {
+                    string ext = file3.FileName.Split('.')[1].ToLower();
+                    if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                        throw new ApplicationException("Wrong image extension.");
+                    imagename3 = date + "-3." + ext;
+                    using (Stream image = file3.OpenReadStream())
+                        await imageContentManager.UploadImageAsync(user.Id, imagename3, image);
+                }
+                if (file4 != null)
+                {
+                    string ext = file4.FileName.Split('.')[1].ToLower();
+                    if (!ext.Equals("jpeg") && !ext.Equals("jpg") && !ext.Equals("bmp") && !ext.Equals("png"))
+                        throw new ApplicationException("Wrong image extension.");
+                    imagename4 = date + "-4." + ext;
+                    using (Stream image = file4.OpenReadStream())
+                        await imageContentManager.UploadImageAsync(user.Id, imagename4, image);
+                }
+                string[] arr = new string[] { imagename1, imagename2, imagename3, imagename4 };
+                var list = new List<string>();
+                foreach (var n in arr)
+                    if (n != null)
+                        list.Add(n);
+                await contentManager.AddNoteAsync(user.Id, new Note(descr,imagename, list));
+                return Ok();
             }
             catch (IndexOutOfRangeException)
             {
