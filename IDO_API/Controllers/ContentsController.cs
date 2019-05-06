@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using IDO_API.DataBase.CosmosDB;
 using IDO_API.Extensions;
 using IDO_API.Models;
-using System.Web;
-using System.Web.Http;
-using System.Net.Http;
-using System.Net;
-using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -73,7 +67,7 @@ namespace IDO_API.Controllers
                     imagename = date + "." + ext;
                     using (Stream image = file.OpenReadStream())
                         await imageContentManager.UploadImageAsync(user.Id, imagename, image);
-                    
+
                 }
                 if (file1 != null)
                 {
@@ -116,7 +110,7 @@ namespace IDO_API.Controllers
                 foreach (var n in arr)
                     if (n != null)
                         list.Add(n);
-                await contentManager.AddNoteAsync(user.Id, new Note(descr,imagename, list));
+                await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, list));
                 return Ok();
             }
             catch (IndexOutOfRangeException)
@@ -161,24 +155,19 @@ namespace IDO_API.Controllers
                 return BadRequest(e.Message);
             }
         }
-        [HttpDelete]
-        public async Task<ActionResult> ApiDeleteNote()
+        [HttpDelete("/delete/{l}/{p}/{blobref}")]
+        public async Task<ActionResult> ApiDeleteNote(string l, string p, string blobref)
         {
             try
             {
-                string l = Request.Form["nickname"];
-                string p = Request.Form["password"];
-                string blobref = Request.Form["note"];
+                if (!accountManager.IsValidAcccount(l, p))
+                    return BadRequest("wrong nickname/pass");
                 string id = accountManager.GetAccountId(l);
                 if (id == null)
                     return BadRequest("Cant find user");
 
-                var result = await imageContentManager.DeleteImageAsync(id, blobref);
 
-                if (result == -1)
-                    return BadRequest("Cant delete Image");
-
-                result = await contentManager.DeleteNoteAsync(id, blobref);
+                var result = await contentManager.DeleteNoteAsync(id, blobref);
 
                 if (result == -1)
                     return BadRequest("Cant delete Image description");

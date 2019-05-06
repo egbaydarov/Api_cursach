@@ -52,9 +52,9 @@ namespace IDO_API.Controllers
                 var password = SHA.GenerateSaltedHashBase64(requestData["password"]);
                 var newpassword = SHA.GenerateSaltedHashBase64(requestData["newpassword"]);
                 User user = new User(requestData["newnickname"], newpassword);
-                user.Id = requestData["nickname"];
+                user.Id = accountManager.GetAccountId(requestData["nickname"]);
 
-                var result = await accountManager.UpadateAccountInfoAsync(requestData["password"], user);
+                var result = await accountManager.UpadateAccountInfoAsync(password, user);
                 if (result == -1)
                     return BadRequest("Cant update account");
 
@@ -166,6 +166,28 @@ namespace IDO_API.Controllers
                 var result = await accountManager.AddGoal(nick, gnick, desc);
                 if (result == -1)
                     return BadRequest("Can't add goal");
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpPut("/goals")]
+        public async Task<ActionResult> CloseGoal()
+        {
+            try
+            {
+                var data = Request.Form;
+                var nick = data["nickname"];
+                var pass = data["password"];
+                var gnick = data["goalsnickname"];
+                var desc = data["description"];
+                if (!accountManager.IsValidAcccount(nick, pass))
+                    return BadRequest("Not valid user data");
+                var result = await accountManager.RemoveGoal(nick, gnick, desc);
+                if (result == -1)
+                    return BadRequest("Can't close goal");
                 return Ok();
             }
             catch (Exception e)

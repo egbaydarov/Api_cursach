@@ -93,7 +93,7 @@ namespace IDO_API.DataBase.CosmosDB
             {
                 string documentId = userId.RemoveGuidDelimiters();
 
-                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                               .Where(content => content.Id.Equals(documentId))
                               .AsEnumerable()
                               .FirstOrDefault();

@@ -72,9 +72,12 @@ namespace IDO_API.DataBase.CosmosDB
                 if (checkForUserExistQuery != null)
                     throw new ApplicationException("Nickname already taken.");
 
+                query.Nickname = user.Nickname;
+                query.Password = user.Password;
+
                 await client.ReplaceDocumentAsync(
                         UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
-                        user);
+                        query);
                 return 0;
 
             }
@@ -327,13 +330,14 @@ namespace IDO_API.DataBase.CosmosDB
                                   .Where(acc => acc.Id.Equals(id))
                                   .AsEnumerable()
                                   .FirstOrDefault();
-
-                if (query.Goals.Where(x => x.Nickname.Equals(nickname) && x.Description.Equals(description)).AsEnumerable()
-                                  .FirstOrDefault() == null)
+                Goal goal;
+                if ((goal = query.Goals.Where(x => x.Nickname.Equals(nickname) && x.Description.Equals(description)).AsEnumerable()
+                                  .FirstOrDefault()) == null)
                     throw new ApplicationException("Goal doesn't exist");
 
                 query.Goals.RemoveAll(x => x.Nickname.Equals(nickname) && x.Description.Equals(description));
-
+                goal.isReached = true;
+                query.Goals.Add(goal);
                 await client.ReplaceDocumentAsync(
                         UriFactory.CreateDocumentUri(databaseId, collectionId, query.Id),
                         query);
