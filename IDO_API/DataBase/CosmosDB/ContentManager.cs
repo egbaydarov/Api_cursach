@@ -29,7 +29,21 @@ namespace IDO_API.DataBase.CosmosDB
 
         public ContentManager()
         {
-            client = new DocumentClient(new System.Uri(accountURL), accountKey);
+            try
+            {
+                client = new DocumentClient(new System.Uri(accountURL), accountKey);
+                client.CreateDatabaseIfNotExistsAsync(new Microsoft.Azure.Documents.Database() { Id = databaseId });
+                client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(databaseId),
+                     new Microsoft.Azure.Documents.DocumentCollection()
+                     {
+                         Id = collectionId,
+                         PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new System.Collections.ObjectModel.Collection<string>(new List<string> { "/" + collectionId }) }
+                     });
+            }
+            catch (Exception)
+            {
+                
+            }
         }
 
         public static ContentManager DefaultManager
