@@ -8,13 +8,14 @@ namespace IDO_API.Models
 {
     public class Note
     {
-        public Note(string description, string imageReference, List<string> eximages = null)
+        public Note(string description, string imageReference, string nickname, List<string> eximages = null)
         {
             Description = description;
             ImageReference = imageReference;
             LukasCount = 0;
             Lukasers = new List<string>();
             ExImages = eximages;
+            Nickname = nickname;
         }
 
         [JsonProperty(PropertyName = "description")]
@@ -31,5 +32,8 @@ namespace IDO_API.Models
 
         [JsonProperty(PropertyName = "eximages")]
         public List<string> ExImages { get; set; }
+
+        [JsonProperty(PropertyName = "nickname")]
+        public string Nickname { get; set; }
     }
 }

@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using IDO_API.DataBase.CosmosDB;
+﻿using IDO_API.DataBase.CosmosDB;
 using IDO_API.Extensions;
 using IDO_API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace IDO_API.Controllers
 {
@@ -110,7 +111,7 @@ namespace IDO_API.Controllers
                 foreach (var n in arr)
                     if (n != null)
                         list.Add(n);
-                await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename, list));
+                await contentManager.AddNoteAsync(user.Id, new Note(descr, imagename,l, list));
                 return Ok();
             }
             catch (IndexOutOfRangeException)
@@ -134,7 +135,7 @@ namespace IDO_API.Controllers
                 string newdescr = requestData["description"];
                 string imagename = MethodsEx.GetCurrentTimeString();
 
-                var newNote = new Note(newdescr, imagename, new List<string>());
+                var newNote = new Note(newdescr, imagename,l , new List<string>());
 
                 if (accountManager.IsValidAcccount(l, p))
                 {
@@ -197,7 +198,7 @@ namespace IDO_API.Controllers
             }
         }
         [HttpPost("/lukas")]
-        public async Task<ActionResult<bool>> ApiGetRespect()
+        public async Task<ActionResult<bool>> ApiPostRespect()
         {
             try
             {
@@ -223,6 +224,37 @@ namespace IDO_API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("/feed")]
+        public ActionResult<List<Note>> ApiGetFeed()
+        {
+            try
+            {
+                var notes = contentManager.GetAllNotes();
+                if (notes == null)
+                    return BadRequest("Can't get notes");
+                return contentManager.GetAllNotes();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+
+        }
+        [HttpPost("/report")]
+        public async Task<ActionResult> ApiReportBug()
+        {
+            try
+            {
+                var requestData = Request.Form;
+                string message = requestData["message"];
+                await contentManager.ReportBug(message);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
     }

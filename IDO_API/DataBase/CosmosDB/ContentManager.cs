@@ -39,10 +39,16 @@ namespace IDO_API.DataBase.CosmosDB
                          Id = collectionId,
                          PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new System.Collections.ObjectModel.Collection<string>(new List<string> { "/" + collectionId }) }
                      });
+                client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(databaseId),
+                     new Microsoft.Azure.Documents.DocumentCollection()
+                     {
+                         Id = "reports",
+                         PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new System.Collections.ObjectModel.Collection<string>(new List<string> { "/" + "reps" }) }
+                     });
             }
             catch (Exception)
             {
-                
+
             }
         }
 
@@ -81,7 +87,6 @@ namespace IDO_API.DataBase.CosmosDB
             try
             {
                 string documentId = userId.RemoveGuidDelimiters();
-
                 var query = client.CreateDocumentQuery<Content>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 })
                     .Where(content => content.Id.Equals(documentId))
                               .AsEnumerable()
@@ -164,8 +169,27 @@ namespace IDO_API.DataBase.CosmosDB
                         .FirstOrDefault();
                 if (query == null)
                     throw new ApplicationException("Incorrect user ID");
- 
+
                 return query.notes;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+                return null;
+            }
+        }
+
+        public List<Note> GetAllNotes()
+        {
+            try
+            {
+                var query = client.CreateDocumentQuery<Content>(
+                        collectionLink,
+                        new FeedOptions { MaxItemCount = 100 });
+                List<Note> notes = new List<Note>();
+                foreach (var i in query)
+                    notes.AddRange(i.notes);
+                return notes;
             }
             catch (Exception e)
             {
@@ -220,6 +244,20 @@ namespace IDO_API.DataBase.CosmosDB
             {
                 Console.Error.WriteLine(e.Message);
                 return null;
+            }
+        }
+        public async Task<short> ReportBug(string message)
+        {
+            try
+            {
+
+                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, "reports"),
+                        new Report() { Message = message});
+                return 0;
+            }
+            catch (Exception)
+            {
+                return 1;
             }
         }
 
